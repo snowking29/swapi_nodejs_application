@@ -1,13 +1,11 @@
 {
-  "name": "my-express-application",
+  "name": "swapi-nodejs",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "scripts": {},
   "keywords": [],
-  "author": "",
+  "author": "Adrian Arellano Ruiz",
   "license": "ISC",
   "dependencies": {
     "aws-sdk": "^2.907.0",
