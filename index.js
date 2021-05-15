@@ -6,9 +6,6 @@ const express = require('express')
 const app = express()
 const AWS = require('aws-sdk');
 const uuid = require('uuid');
-const VEHICLES_TABLE = process.env.VEHICLES_TABLE;
-
-const request = require("request");
 
 const VEHICLES_TABLE = process.env.VEHICLES_TABLE;
 const IS_OFFLINE = process.env.IS_OFFLINE;
@@ -18,7 +15,6 @@ if (IS_OFFLINE === 'true') {
     region: 'localhost',
     endpoint: 'http://localhost:3000'
   })
-  console.log(dynamoDb);
 } else {
   dynamoDb = new AWS.DynamoDB.DocumentClient();
 };
@@ -26,7 +22,7 @@ if (IS_OFFLINE === 'true') {
 
 app.use(bodyParser.json({ strict: false }));
 
-function getAllVehicles(page, vehicles) {
+function getAllVehiclesfromSWAPI(page, vehicles) {
   console.log(vehicles)
   page = page || 1;
   vehicles = vehicles || [];
@@ -34,52 +30,53 @@ function getAllVehicles(page, vehicles) {
       .get(`https://swapi.py4e.com/api/vehicles/?page=${page}`)
       .then(response => {
         const rawVehicles = response.data;
-        rawVehicles.results.forEach(vehicle => vehicles.push(vehicle));
-        if (rawVehicles.length === rawVehicles.count) {
-            return vehicles;
-        }
-        return getAllVehicles(page + 1, vehicles);
+        rawVehicles.results.forEach(vehicle => {
+          vehicles.push(vehicle)
+        });
+        return getAllVehiclesfromSWAPI(page + 1, vehicles);
       }).catch( err => {
         return vehicles;
       });
 }
 
 app.get('/vehicles', function (req, res) {
-  getAllVehicles().then(rawVehicles =>{
-    const vehiculos = rawVehicles.map( vehicle => {
-      return {
-        nombre: vehicle.name,
-        modelo: vehicle.model,
-        fabricante: vehicle.manufacturer,
-        costo_en_creditos: vehicle.cost_in_credits,
-        longitud: vehicle.length,
-        velocidad_maxima_de_atmosfera: vehicle.max_atmosphering_speed,
-        tripulacion: vehicle.crew,
-        pasajeros: vehicle.passengers,
-        capacidad_de_carga: vehicle.cargo_capacity,
-        consumibles: vehicle.consumables,
-        clase_de_vehiculo: vehicle.vehicle_class,
-        pilotos: vehicle.pilots,
-        filmes: vehicle.films,
-        creado: vehicle.created,
-        editado: vehicle.edited
-      }
-    })
-    const final_response = {
-      vehiculos,
-      meta:{
-        status:{
-          code: "00",
-          message_ilgn:[
-            {
-              value: `Se ejecutó correctamente el proceso.`,
-              locale: "es_PE"
-            }
-          ]
+  getAllVehiclesfromSWAPI().then(rawVehicles =>{
+      const vehiculos = rawVehicles.map( vehicle => {
+        return {
+          nombre: vehicle.name,
+          modelo: vehicle.model,
+          fabricante: vehicle.manufacturer,
+          costo_en_creditos: vehicle.cost_in_credits,
+          longitud: vehicle.length,
+          velocidad_maxima_de_atmosfera: vehicle.max_atmosphering_speed,
+          tripulacion: vehicle.crew,
+          pasajeros: vehicle.passengers,
+          capacidad_de_carga: vehicle.cargo_capacity,
+          consumibles: vehicle.consumables,
+          clase_de_vehiculo: vehicle.vehicle_class,
+          pilotos: vehicle.pilots,
+          filmes: vehicle.films,
+          creado: vehicle.created,
+          editado: vehicle.edited
+        }
+      })
+      console.log(vehiculos);
+
+      const final_response = {
+        vehiculos,
+        meta:{
+          status:{
+            code: "00",
+            message_ilgn:[
+              {
+                value: `Se ejecutó correctamente el proceso.`,
+                locale: "es_PE"
+              }
+            ]
+          }
         }
       }
-    }
-    res.json(final_response);
+      res.json(final_response);
   }).catch(err => {
       console.error(err);
       res.status(500).send(err);
