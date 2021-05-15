@@ -1,0 +1,41 @@
+{
+	"info": {
+		"_postman_id": "40519f5e-9927-4bc0-be85-8473ea750d45",
+		"name": "StarWars-Api",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get Vehicles",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": null
+			},
+			"response": []
+		},
+		{
+			"name": "Post Vehicle",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "https://8mqmxocchj.execute-api.us-east-1.amazonaws.com/dev/vehicles",
+					"protocol": "https",
+					"host": [
+						"8mqmxocchj",
+						"execute-api",
+						"us-east-1",
+						"amazonaws",
+						"com"
+					],
+					"path": [
+						"dev",
+						"vehicles"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
