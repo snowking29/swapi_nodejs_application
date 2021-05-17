@@ -19,68 +19,92 @@ if (IS_OFFLINE === 'true') {
   dynamoDb = new AWS.DynamoDB.DocumentClient();
 };
 
-
 app.use(bodyParser.json({ strict: false }));
 
 function getAllVehiclesfromSWAPI(page, vehicles) {
-  console.log(vehicles)
   page = page || 1;
   vehicles = vehicles || [];
   return axios
-      .get(`https://swapi.py4e.com/api/vehicles/?page=${page}`)
-      .then(response => {
-        const rawVehicles = response.data;
-        rawVehicles.results.forEach(vehicle => {
-          vehicles.push(vehicle)
-        });
-        return getAllVehiclesfromSWAPI(page + 1, vehicles);
-      }).catch( err => {
-        return vehicles;
+    .get(`https://swapi.py4e.com/api/vehicles/?page=${page}`)
+    .then(response => {
+      const rawVehicles = response.data;
+      rawVehicles.results.forEach(vehicle => {
+        vehicles.push(vehicle)
       });
+      return getAllVehiclesfromSWAPI(page + 1, vehicles);
+    }).catch( err => {
+      return vehicles;
+    });
 }
 
-app.get('/vehicles', function (req, res) {
-  getAllVehiclesfromSWAPI().then(rawVehicles =>{
-      const vehiculos = rawVehicles.map( vehicle => {
-        return {
-          nombre: vehicle.name,
-          modelo: vehicle.model,
-          fabricante: vehicle.manufacturer,
-          costo_en_creditos: vehicle.cost_in_credits,
-          longitud: vehicle.length,
-          velocidad_maxima_de_atmosfera: vehicle.max_atmosphering_speed,
-          tripulacion: vehicle.crew,
-          pasajeros: vehicle.passengers,
-          capacidad_de_carga: vehicle.cargo_capacity,
-          consumibles: vehicle.consumables,
-          clase_de_vehiculo: vehicle.vehicle_class,
-          pilotos: vehicle.pilots,
-          filmes: vehicle.films,
-          creado: vehicle.created,
-          editado: vehicle.edited
-        }
-      })
-      console.log(vehiculos);
+app.get('/vehicles', async function (req, res) {
+  const vehiculosFromApi = await getAllVehiclesfromSWAPI();
 
-      const final_response = {
-        vehiculos,
-        meta:{
-          status:{
-            code: "00",
-            message_ilgn:[
-              {
-                value: `Se ejecutó correctamente el proceso.`,
-                locale: "es_PE"
-              }
-            ]
-          }
+  var params = {
+    TableName: VEHICLES_TABLE
+  }
+  dynamoDb.scan(params, (err,data) => {
+    var vehiculosTotal = [];
+
+    for (const vehiculos of vehiculosFromApi){
+      const vehiculo_object = {
+        nombre: vehiculos.name,
+        modelo: vehiculos.model,
+        fabricante: vehiculos.manufacturer,
+        costo_en_creditos: vehiculos.cost_in_credits,
+        longitud: vehiculos.length,
+        velocidad_maxima_de_atmosfera: vehiculos.max_atmosphering_speed,
+        tripulacion: vehiculos.crew,
+        pasajeros: vehiculos.passengers,
+        capacidad_de_carga: vehiculos.cargo_capacity,
+        consumibles: vehiculos.consumables,
+        clase_de_vehiculo: vehiculos.vehicle_class,
+        pilotos: vehiculos.pilots,
+        filmes: vehiculos.films,
+        creado: vehiculos.created,
+        editado: vehiculos.edited,
+        id: vehiculos.url.replace(/["http://swapi.dev/api/vehicles/"]/g, '').replace("y4om", "")
+      }
+      vehiculosTotal.push(vehiculo_object);
+    }
+
+    for (const vehiculos of data.Items){
+      const vehiculo_object = {
+        nombre: vehiculos.nombre,
+        modelo: vehiculos.modelo,
+        fabricante: vehiculos.fabricante,
+        costo_en_creditos: vehiculos.costo_en_creditos,
+        longitud: vehiculos.longitud,
+        velocidad_maxima_de_atmosfera: vehiculos.velocidad_maxima_de_atmosfera,
+        tripulacion: vehiculos.tripulacion,
+        pasajeros: vehiculos.pasajeros,
+        capacidad_de_carga: vehiculos.capacidad_de_carga,
+        consumibles: vehiculos.consumibles,
+        clase_de_vehiculo: vehiculos.clase_de_vehiculo,
+        pilotos: vehiculos.pilotos,
+        filmes: vehiculos.filmes,
+        creado: vehiculos.creado,
+        editado: vehiculos.editado,
+        id: vehiculos.vehicleId
+      }
+      vehiculosTotal.push(vehiculo_object);
+    }
+    const final_response = {
+      vehiculosTotal,
+      meta:{
+        status:{
+          code: "00",
+          message_ilgn:[
+            {
+              value: `Se ejecutó correctamente el proceso.`,
+              locale: "es_PE"
+            }
+          ]
         }
       }
-      res.json(final_response);
-  }).catch(err => {
-      console.error(err);
-      res.status(500).send(err);
-  });;
+    }
+    res.json(final_response);
+  });
 })
 
 app.get('/vehicles/:vehicleId', function (req, res) {
@@ -104,7 +128,8 @@ app.get('/vehicles/:vehicleId', function (req, res) {
           pilotos: body.pilots,
           filmes: body.films,
           creado: body.created,
-          editado: body.edited
+          editado: body.edited,
+          id: body.url.replace(/["http://swapi.dev/api/vehicles/"]/g, '').replace("y4om", "")
         },
         meta:{
           status:{
@@ -161,7 +186,8 @@ app.get('/vehicles/:vehicleId', function (req, res) {
               pilotos: result.Item.pilotos,
               filmes: result.Item.filmes,
               creado: result.Item.creado,
-              editado: result.Item.editado
+              editado: result.Item.editado,
+              id: result.Item.vehicleId
             },
             meta:{
               status:{
